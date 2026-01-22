@@ -1,4 +1,5 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import client from "../../api/client";
 
 interface User {
   email: string;
@@ -22,6 +23,33 @@ const initialState: AuthState = {
   isTokenExpired: false,
 };
 
+// Async thunk for login
+export const login = createAsyncThunk(
+  "auth/login",
+  async (payload: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const res = await client.post("/auth/login", payload);
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Login failed");
+    }
+  },
+);
+
+// Async thunk for signup
+export const signup = createAsyncThunk(
+  "auth/signup",
+  async (payload: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const res = await client.post("/auth/signup", payload);
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Signup failed");
+    }
+  },
+);
+
+// Move extraReducers into createSlice
 export const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -52,7 +80,37 @@ export const authSlice = createSlice({
       state.isTokenExpired = action.payload;
     },
   },
-  // Async thunks (login, signup, refresh, etc.) to be added here
+  extraReducers: (builder) => {
+    builder
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
+        state.user = action.payload.user;
+      })
+      .addCase(login.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(signup.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(signup.fulfilled, (state, action: PayloadAction<any>) => {
+        state.loading = false;
+        state.token = action.payload.token;
+        state.refreshToken = action.payload.refreshToken;
+        state.user = action.payload.user;
+      })
+      .addCase(signup.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+  },
 });
 
 export const {
