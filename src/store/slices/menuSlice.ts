@@ -1,4 +1,18 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import client from "../../api/client";
+export const fetchMenu = createAsyncThunk(
+  "menu/fetchMenu",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await client.get("/menu");
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch menu",
+      );
+    }
+  },
+);
 
 interface MenuItem {
   id: string;
@@ -44,6 +58,26 @@ export const menuSlice = createSlice({
     invalidateCache(state) {
       state.cacheValid = false;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchMenu.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        fetchMenu.fulfilled,
+        (state, action: PayloadAction<MenuItem[]>) => {
+          state.loading = false;
+          state.items = action.payload;
+          state.lastFetched = Date.now();
+          state.cacheValid = true;
+        },
+      )
+      .addCase(fetchMenu.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
   },
 });
 
