@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -7,14 +7,10 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/colors";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchOrders, updateOrderStatus } from "../../store/slices/ordersSlice";
 
-const SEED_ORDERS = [
-  { id: "ord-1012", customer: "Lindiwe M.", total: 320.0, status: "ready" },
-  { id: "ord-1011", customer: "Sam K.", total: 145.5, status: "pending" },
-  { id: "ord-1010", customer: "John D.", total: 189.99, status: "ready" },
-  { id: "ord-1009", customer: "Nomsa K.", total: 98.5, status: "confirmed" },
-  { id: "ord-1008", customer: "Peter S.", total: 256.0, status: "cancelled" },
-];
+// Loaded from Supabase via Redux thunks
 
 const FILTERS = [
   { key: "all", label: "All" },
@@ -44,31 +40,21 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const AdminOrdersScreen = () => {
+  const dispatch = useAppDispatch();
   const [filter, setFilter] = useState<StatusKey>("all");
-  const [orders, setOrders] = useState(
-    SEED_ORDERS as Array<{
-      id: string;
-      customer: string;
-      total: number;
-      status:
-        | StatusKey
-        | "confirmed"
-        | "ready"
-        | "pending"
-        | "cancelled"
-        | "completed";
-    }>,
-  );
+  const { orders, loading } = useAppSelector((s) => s.orders);
+
+  useEffect(() => {
+    dispatch(fetchOrders());
+  }, [dispatch]);
 
   const advanceStatus = (id: string) => {
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id !== id) return o;
-        const currentIndex = STATUS_FLOW.indexOf(o.status as StatusKey);
-        const nextIndex = (currentIndex + 1) % STATUS_FLOW.length;
-        return { ...o, status: STATUS_FLOW[nextIndex] };
-      }),
-    );
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+    const currentIndex = STATUS_FLOW.indexOf(order.status as StatusKey);
+    const nextIndex = (currentIndex + 1) % STATUS_FLOW.length;
+    const nextStatus = STATUS_FLOW[nextIndex] as any;
+    dispatch(updateOrderStatus({ id, status: nextStatus }));
   };
 
   const data = useMemo(() => {
@@ -105,8 +91,11 @@ const AdminOrdersScreen = () => {
         renderItem={({ item }) => (
           <View style={styles.row}>
             <Text style={styles.id}>#{item.id}</Text>
-            <Text style={styles.text}>{item.customer}</Text>
-            <Text style={styles.text}>R{item.total.toFixed(2)}</Text>
+            {typeof item.total === "number" ? (
+              <Text style={styles.text}>R{item.total.toFixed(2)}</Text>
+            ) : (
+              <Text style={styles.text}>—</Text>
+            )}
             <TouchableOpacity
               onPress={() => advanceStatus(item.id)}
               style={[

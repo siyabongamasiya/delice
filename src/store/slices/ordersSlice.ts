@@ -1,6 +1,7 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import supabase from "../../api/supabase";
 
-interface Order {
+export interface Order {
   id: string;
   trackingCode?: string;
   items?: any[];
@@ -21,43 +22,61 @@ interface OrdersState {
 }
 
 const initialState: OrdersState = {
-  orders: [
-    {
-      id: "ord-1001",
-      trackingCode: "408",
-      items: [
-        { id: "meal-1", name: "Grilled Chicken", qty: 1, price: 129.99 },
-        { id: "drink-1", name: "Iced Latte", qty: 2, price: 38.0 },
-      ],
-      total: 205.99,
-      date: "2026-01-23",
-      time: "18:30",
-      status: "ready",
-      type: "takeout",
-    },
-    {
-      id: "ord-1002",
-      items: [{ id: "meal-2", name: "Beef Burger", qty: 2, price: 109.5 }],
-      total: 219.0,
-      date: "2026-01-22",
-      time: "20:10",
-      status: "confirmed",
-      type: "takeout",
-    },
-    {
-      id: "ord-1003",
-      guestCount: 4,
-      date: "2026-01-25",
-      time: "19:00",
-      status: "pending",
-      type: "reservation",
-    },
-  ],
+  orders: [],
   currentOrder: null,
   trackingCode: null,
   loading: false,
   error: null,
 };
+
+// Map DB row to app Order
+type OrderRow = {
+  id: string;
+  customer_name: string | null;
+  total: number | null;
+  status: Order["status"];
+  type: Order["type"];
+  created_at?: string | null;
+};
+
+const mapRowToOrder = (r: OrderRow): Order => ({
+  id: r.id,
+  total: r.total ?? undefined,
+  status: r.status,
+  type: r.type,
+  date: r.created_at ? r.created_at.slice(0, 10) : undefined,
+  time: r.created_at
+    ? new Date(r.created_at).toTimeString().slice(0, 5)
+    : undefined,
+});
+
+export const fetchOrders = createAsyncThunk<
+  Order[],
+  void,
+  { rejectValue: string }
+>("orders/fetchAll", async (_, { rejectWithValue }) => {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, customer_name, total, status, type, created_at")
+    .order("created_at", { ascending: false });
+  if (error) return rejectWithValue(error.message);
+  return (data as OrderRow[]).map(mapRowToOrder);
+});
+
+export const updateOrderStatus = createAsyncThunk<
+  { id: string; status: Order["status"] },
+  { id: string; status: Order["status"] },
+  { rejectValue: string }
+>("orders/updateStatus", async (payload, { rejectWithValue }) => {
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ status: payload.status })
+    .eq("id", payload.id)
+    .select("id, status")
+    .single();
+  if (error) return rejectWithValue(error.message);
+  return { id: data!.id, status: data!.status };
+});
 
 export const ordersSlice = createSlice({
   name: "orders",
@@ -82,6 +101,27 @@ export const ordersSlice = createSlice({
       state.currentOrder = null;
       state.trackingCode = null;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchOrders.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.orders = action.payload;
+      })
+      .addCase(fetchOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to fetch orders";
+      })
+      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+        const { id, status } = action.payload;
+        state.orders = state.orders.map((o) =>
+          o.id === id ? { ...o, status } : o,
+        );
+      });
   },
 });
 

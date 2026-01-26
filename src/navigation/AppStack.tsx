@@ -5,6 +5,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/colors";
 import AdminDashboardScreen from "../screens/admin/AdminDashboardScreen";
+import AdminEditMenuItemScreen from "../screens/admin/AdminEditMenuItemScreen";
 import AdminMenuItemsScreen from "../screens/admin/AdminMenuItemsScreen";
 import AdminOrdersScreen from "../screens/admin/AdminOrdersScreen";
 import AdminSettingsScreen from "../screens/admin/AdminSettingsScreen";
@@ -37,6 +38,15 @@ const AdminStack = () => (
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.primary,
         title: "Menu Items",
+      }}
+    />
+    <Stack.Screen
+      name="AdminEditMenuItem"
+      component={AdminEditMenuItemScreen}
+      options={{
+        headerStyle: { backgroundColor: Colors.background },
+        headerTintColor: Colors.primary,
+        title: "Add Item",
       }}
     />
     <Stack.Screen

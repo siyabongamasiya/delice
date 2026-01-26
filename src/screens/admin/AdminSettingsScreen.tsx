@@ -1,9 +1,60 @@
-import React from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import GoldButton from "../../components/GoldButton";
 import { Colors } from "../../constants/colors";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { fetchSettings, saveSettings } from "../../store/slices/settingsSlice";
 
 const AdminSettingsScreen = () => {
+  const dispatch = useAppDispatch();
+  const settings = useAppSelector((s) => s.settings);
+
+  const [restaurantName, setRestaurantName] = useState("");
+  const [address, setAddress] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [weekdayHours, setWeekdayHours] = useState("");
+  const [weekendHours, setWeekendHours] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchSettings());
+  }, [dispatch]);
+
+  useEffect(() => {
+    setRestaurantName(settings.restaurantName || "");
+    setAddress(settings.address || "");
+    setPhone(settings.phone || "");
+    setEmail(settings.email || "");
+    setWeekdayHours(settings.weekdayHours || "");
+    setWeekendHours(settings.weekendHours || "");
+  }, [
+    settings.restaurantName,
+    settings.address,
+    settings.phone,
+    settings.email,
+    settings.weekdayHours,
+    settings.weekendHours,
+  ]);
+
+  const onSave = () => {
+    dispatch(
+      saveSettings({
+        restaurantName,
+        address,
+        phone,
+        email,
+        weekdayHours,
+        weekendHours,
+      }),
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Restaurant Settings</Text>
@@ -12,39 +63,59 @@ const AdminSettingsScreen = () => {
         <Text style={styles.label}>Name</Text>
         <TextInput
           style={styles.input}
-          defaultValue="Delice"
+          value={restaurantName}
+          onChangeText={setRestaurantName}
           placeholderTextColor="#888"
         />
 
         <Text style={styles.label}>Address</Text>
         <TextInput
           style={styles.input}
-          defaultValue="123 Luxury Ave, Sandton, Johannesburg"
+          value={address}
+          onChangeText={setAddress}
           placeholderTextColor="#888"
         />
 
         <Text style={styles.label}>Phone</Text>
         <TextInput
           style={styles.input}
-          defaultValue="+27 11 555 1234"
+          value={phone}
+          onChangeText={setPhone}
           placeholderTextColor="#888"
+        />
+
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
+          placeholderTextColor="#888"
+          autoCapitalize="none"
+          keyboardType="email-address"
         />
 
         <Text style={styles.label}>Hours (Weekdays)</Text>
         <TextInput
           style={styles.input}
-          defaultValue="10:00 - 22:00"
+          value={weekdayHours}
+          onChangeText={setWeekdayHours}
           placeholderTextColor="#888"
         />
 
         <Text style={styles.label}>Hours (Weekend)</Text>
         <TextInput
           style={styles.input}
-          defaultValue="09:00 - 23:00"
+          value={weekendHours}
+          onChangeText={setWeekendHours}
           placeholderTextColor="#888"
         />
-
-        <GoldButton title="Save" onPress={() => {}} style={{ marginTop: 12 }} />
+        {settings.loading ? (
+          <View style={{ marginTop: 12 }}>
+            <ActivityIndicator color={Colors.primary} />
+          </View>
+        ) : (
+          <GoldButton title="Save" onPress={onSave} style={{ marginTop: 12 }} />
+        )}
       </View>
     </View>
   );

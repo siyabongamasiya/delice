@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { useEffect } from "react";
 import {
   Alert,
   FlatList,
@@ -9,40 +10,21 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/colors";
-
-const SEED_ITEMS = [
-  {
-    id: "meal-1",
-    name: "Grilled Chicken",
-    price: 129.99,
-    available: true,
-    category: "meals",
-  },
-  {
-    id: "meal-2",
-    name: "Beef Burger",
-    price: 109.5,
-    available: true,
-    category: "meals",
-  },
-  {
-    id: "drink-1",
-    name: "Iced Latte",
-    price: 38.0,
-    available: true,
-    category: "drinks",
-  },
-  {
-    id: "drink-2",
-    name: "Sparkling Water",
-    price: 22.0,
-    available: false,
-    category: "drinks",
-  },
-];
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  deleteMenuItem,
+  fetchMenu,
+  toggleAvailability,
+} from "../../store/slices/menuSlice";
 
 const AdminMenuItemsScreen = () => {
-  const [items, setItems] = useState(SEED_ITEMS);
+  const dispatch = useAppDispatch();
+  const { items } = useAppSelector((s) => s.menu);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    dispatch(fetchMenu());
+  }, [dispatch]);
 
   const confirmDelete = (id: string, name: string) => {
     Alert.alert("Delete Item", `Are you sure you want to delete "${name}"?`, [
@@ -50,7 +32,7 @@ const AdminMenuItemsScreen = () => {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => setItems((prev) => prev.filter((i) => i.id !== id)),
+        onPress: () => dispatch(deleteMenuItem(id)),
       },
     ]);
   };
@@ -69,7 +51,18 @@ const AdminMenuItemsScreen = () => {
               </Text>
             </View>
             <View style={styles.actions}>
-              <TouchableOpacity style={styles.tag} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.tag}
+                activeOpacity={0.8}
+                onPress={() =>
+                  dispatch(
+                    toggleAvailability({
+                      id: item.id,
+                      available: !item.available,
+                    }),
+                  )
+                }
+              >
                 <Text style={styles.tagText}>
                   {item.available ? "Available" : "Hidden"}
                 </Text>
@@ -87,7 +80,11 @@ const AdminMenuItemsScreen = () => {
         )}
         contentContainerStyle={{ paddingBottom: 16 }}
       />
-      <TouchableOpacity style={styles.addBtn} activeOpacity={0.85}>
+      <TouchableOpacity
+        style={styles.addBtn}
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate("AdminEditMenuItem" as never)}
+      >
         <Text style={styles.addText}>+ Add Item</Text>
       </TouchableOpacity>
     </View>
