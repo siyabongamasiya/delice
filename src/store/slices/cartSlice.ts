@@ -14,9 +14,30 @@ interface CartState {
   total: number;
 }
 
+const initialItems: CartItem[] = [
+  {
+    id: "meal-1",
+    name: "Grilled Chicken",
+    price: 129.99,
+    quantity: 1,
+    imageUrl:
+      "https://images.unsplash.com/photo-1604909052715-3027fae1d434?q=80&w=800&auto=format&fit=crop",
+    category: "meals",
+  },
+  {
+    id: "drink-1",
+    name: "Iced Latte",
+    price: 38.0,
+    quantity: 2,
+    imageUrl:
+      "https://images.unsplash.com/photo-1497515114629-f71d768fd07c?q=80&w=800&auto=format&fit=crop",
+    category: "drinks",
+  },
+];
+
 const initialState: CartState = {
-  items: [],
-  total: 0,
+  items: initialItems,
+  total: calculateTotal(initialItems),
 };
 
 function calculateTotal(items: CartItem[]): number {

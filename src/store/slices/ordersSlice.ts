@@ -2,13 +2,13 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Order {
   id: string;
-  trackingCode: string;
+  trackingCode?: string;
   items?: any[];
   total?: number;
   guestCount?: number;
   date?: string;
   time?: string;
-  status: string;
+  status: "pending" | "confirmed" | "ready" | "completed" | "cancelled";
   type: "takeout" | "reservation";
 }
 
@@ -21,7 +21,38 @@ interface OrdersState {
 }
 
 const initialState: OrdersState = {
-  orders: [],
+  orders: [
+    {
+      id: "ord-1001",
+      trackingCode: "408",
+      items: [
+        { id: "meal-1", name: "Grilled Chicken", qty: 1, price: 129.99 },
+        { id: "drink-1", name: "Iced Latte", qty: 2, price: 38.0 },
+      ],
+      total: 205.99,
+      date: "2026-01-23",
+      time: "18:30",
+      status: "ready",
+      type: "takeout",
+    },
+    {
+      id: "ord-1002",
+      items: [{ id: "meal-2", name: "Beef Burger", qty: 2, price: 109.5 }],
+      total: 219.0,
+      date: "2026-01-22",
+      time: "20:10",
+      status: "confirmed",
+      type: "takeout",
+    },
+    {
+      id: "ord-1003",
+      guestCount: 4,
+      date: "2026-01-25",
+      time: "19:00",
+      status: "pending",
+      type: "reservation",
+    },
+  ],
   currentOrder: null,
   trackingCode: null,
   loading: false,

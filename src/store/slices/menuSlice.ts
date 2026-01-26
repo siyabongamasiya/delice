@@ -33,7 +33,48 @@ interface MenuState {
 }
 
 const initialState: MenuState = {
-  items: [],
+  items: [
+    {
+      id: "meal-1",
+      name: "Grilled Chicken",
+      description: "Juicy grilled chicken with lemon butter sauce",
+      price: 129.99,
+      imageUrl:
+        "https://images.unsplash.com/photo-1604909052715-3027fae1d434?q=80&w=800&auto=format&fit=crop",
+      available: true,
+      category: "meals",
+    },
+    {
+      id: "meal-2",
+      name: "Beef Burger",
+      description: "Classic beef burger with cheddar and fries",
+      price: 109.5,
+      imageUrl:
+        "https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=800&auto=format&fit=crop",
+      available: true,
+      category: "meals",
+    },
+    {
+      id: "drink-1",
+      name: "Iced Latte",
+      description: "Espresso with milk over ice",
+      price: 38.0,
+      imageUrl:
+        "https://images.unsplash.com/photo-1497515114629-f71d768fd07c?q=80&w=800&auto=format&fit=crop",
+      available: true,
+      category: "drinks",
+    },
+    {
+      id: "drink-2",
+      name: "Sparkling Water",
+      description: "Refreshing sparkling mineral water",
+      price: 22.0,
+      imageUrl:
+        "https://images.unsplash.com/photo-1613478223719-2ab802602423?q=80&w=800&auto=format&fit=crop",
+      available: true,
+      category: "drinks",
+    },
+  ],
   loading: false,
   error: null,
   lastFetched: 0,

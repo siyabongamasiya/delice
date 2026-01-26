@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
 import {
@@ -9,7 +10,7 @@ import {
   View,
 } from "react-native";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { signup } from "../../store/slices/authSlice";
+import { signup, signupWithGoogle } from "../../store/slices/authSlice";
 
 const SignupScreen = () => {
   const dispatch = useAppDispatch();
@@ -76,7 +77,22 @@ const SignupScreen = () => {
         )}
       </TouchableOpacity>
       <TouchableOpacity
-        onPress={() => navigation.navigate("Login")}
+        style={[styles.button, styles.googleBtn]}
+        onPress={() => dispatch(signupWithGoogle())}
+        disabled={loading}
+        activeOpacity={0.85}
+      >
+        {loading ? (
+          <ActivityIndicator color="#000" />
+        ) : (
+          <View style={styles.googleContent}>
+            <Ionicons name="logo-google" size={18} color="#4285F4" />
+            <Text style={styles.googleText}>Sign up with Google</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => navigation.navigate("Login" as never)}
         style={styles.linkContainer}
       >
         <Text style={styles.link}>Already have an account? Log in</Text>
@@ -117,7 +133,21 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: 8,
   },
+  googleBtn: {
+    backgroundColor: "#fff",
+    marginTop: 12,
+  },
+  googleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   buttonText: {
+    color: "#000",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  googleText: {
     color: "#000",
     fontWeight: "bold",
     fontSize: 16,

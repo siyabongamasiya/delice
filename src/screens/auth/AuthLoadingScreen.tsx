@@ -2,7 +2,7 @@ import React from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useAppSelector } from "../../store/hooks";
 
 const AuthLoadingScreen = () => {

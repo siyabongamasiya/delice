@@ -1,5 +1,4 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import client from "../../api/client";
 
 interface User {
   email: string;
@@ -26,26 +25,53 @@ const initialState: AuthState = {
 // Async thunk for login
 export const login = createAsyncThunk(
   "auth/login",
-  async (payload: { email: string; password: string }, { rejectWithValue }) => {
-    try {
-      const res = await client.post("/auth/login", payload);
-      return res.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Login failed");
-    }
+  async (payload: { email: string; password: string }) => {
+    // Mocked login: return a fake token and user without network
+    await new Promise((r) => setTimeout(r, 400));
+    return {
+      token: "mock-token",
+      refreshToken: "mock-refresh",
+      user: { email: payload.email },
+    };
+  },
+);
+
+// Mock Google login/signup
+export const loginWithGoogle = createAsyncThunk(
+  "auth/loginWithGoogle",
+  async () => {
+    await new Promise((r) => setTimeout(r, 300));
+    return {
+      token: "mock-token",
+      refreshToken: "mock-refresh",
+      user: { email: "google.user@example.com" },
+    };
+  },
+);
+
+export const signupWithGoogle = createAsyncThunk(
+  "auth/signupWithGoogle",
+  async () => {
+    await new Promise((r) => setTimeout(r, 300));
+    return {
+      token: "mock-token",
+      refreshToken: "mock-refresh",
+      user: { email: "google.user@example.com" },
+    };
   },
 );
 
 // Async thunk for signup
 export const signup = createAsyncThunk(
   "auth/signup",
-  async (payload: { email: string; password: string }, { rejectWithValue }) => {
-    try {
-      const res = await client.post("/auth/signup", payload);
-      return res.data;
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || "Signup failed");
-    }
+  async (payload: { email: string; password: string }) => {
+    // Mocked signup: return a fake token and user without network
+    await new Promise((r) => setTimeout(r, 500));
+    return {
+      token: "mock-token",
+      refreshToken: "mock-refresh",
+      user: { email: payload.email },
+    };
   },
 );
 
@@ -107,6 +133,40 @@ export const authSlice = createSlice({
         state.user = action.payload.user;
       })
       .addCase(signup.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(loginWithGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        loginWithGoogle.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.loading = false;
+          state.token = action.payload.token;
+          state.refreshToken = action.payload.refreshToken;
+          state.user = action.payload.user;
+        },
+      )
+      .addCase(loginWithGoogle.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(signupWithGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(
+        signupWithGoogle.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.loading = false;
+          state.token = action.payload.token;
+          state.refreshToken = action.payload.refreshToken;
+          state.user = action.payload.user;
+        },
+      )
+      .addCase(signupWithGoogle.rejected, (state, action: any) => {
         state.loading = false;
         state.error = action.payload as string;
       });
