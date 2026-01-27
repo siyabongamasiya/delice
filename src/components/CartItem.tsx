@@ -6,7 +6,7 @@ interface CartItemProps {
   name: string;
   price: number;
   quantity: number;
-  imageUrl: string;
+  imageUrl: string | null;
   category: string;
 }
 
@@ -18,7 +18,11 @@ const CartItem: React.FC<CartItemProps> = ({
   category,
 }) => (
   <View style={styles.container}>
-    <Image source={{ uri: imageUrl }} style={styles.image} />
+    {imageUrl ? (
+      <Image source={{ uri: imageUrl }} style={styles.image} />
+    ) : (
+      <View style={styles.image} />
+    )}
     <View style={styles.info}>
       <Text style={styles.name}>{name}</Text>
       <Text style={styles.category}>{category}</Text>

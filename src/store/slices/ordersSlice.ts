@@ -78,6 +78,43 @@ export const updateOrderStatus = createAsyncThunk<
   return { id: data!.id, status: data!.status };
 });
 
+export const createOrder = createAsyncThunk<
+  Order,
+  {
+    customer_name: string;
+    customer_phone: string | null;
+    notes: string | null;
+    payment_last4: string | null;
+    payment_exp_month: number | null;
+    payment_exp_year: number | null;
+    items: Array<{ id: string; name: string; qty: number; price: number }>;
+    total: number;
+    type: Order["type"];
+  },
+  { rejectValue: string }
+>("orders/create", async (payload, { rejectWithValue }) => {
+  // Keep DB insert minimal to avoid schema mismatches.
+  const { data, error } = await supabase
+    .from("orders")
+    .insert({
+      customer_name: payload.customer_name,
+      total: payload.total,
+      status: "pending",
+      type: payload.type,
+    })
+    .select("id, customer_name, total, status, type, created_at")
+    .single();
+
+  if (error) return rejectWithValue(error.message);
+
+  const base = mapRowToOrder(data as OrderRow);
+  return {
+    ...base,
+    items: payload.items,
+    total: payload.total,
+  };
+});
+
 export const ordersSlice = createSlice({
   name: "orders",
   initialState,
@@ -115,6 +152,19 @@ export const ordersSlice = createSlice({
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to fetch orders";
+      })
+      .addCase(createOrder.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createOrder.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentOrder = action.payload;
+        state.orders = [action.payload, ...state.orders];
+      })
+      .addCase(createOrder.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to create order";
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
         const { id, status } = action.payload;

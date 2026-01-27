@@ -25,7 +25,7 @@ export default function App() {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("AUTH EVENT", event, "HAS_SESSION", !!session);
+      console.log({event, session});
       // On web OAuth redirect, Supabase commonly emits INITIAL_SESSION after reload.
       if (
         (event === "SIGNED_IN" ||

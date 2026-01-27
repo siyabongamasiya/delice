@@ -10,6 +10,7 @@ import AdminMenuItemsScreen from "../screens/admin/AdminMenuItemsScreen";
 import AdminOrdersScreen from "../screens/admin/AdminOrdersScreen";
 import AdminSettingsScreen from "../screens/admin/AdminSettingsScreen";
 import CartScreen from "../screens/customer/CartScreen";
+import CheckoutScreen from "../screens/customer/CheckoutScreen";
 import ContactScreen from "../screens/customer/ContactScreen";
 import HomeScreen from "../screens/customer/HomeScreen";
 import MenuScreen from "../screens/customer/MenuScreen";
@@ -162,6 +163,15 @@ const AppTabsWithHeader = () => {
         name="CartModal"
         component={CartScreen}
         options={{ presentation: "modal", headerShown: false }}
+      />
+      <Stack.Screen
+        name="Checkout"
+        component={CheckoutScreen}
+        options={{
+          headerStyle: { backgroundColor: Colors.background },
+          headerTintColor: Colors.primary,
+          title: "Checkout",
+        }}
       />
       <Stack.Screen
         name="Profile"

@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import React from "react";
 import {
   FlatList,
@@ -19,6 +20,7 @@ import {
 
 const CartScreen = () => {
   const dispatch = useAppDispatch();
+  const navigation = useNavigation<any>();
   const { items, total } = useAppSelector((s) => s.cart);
   const insets = useSafeAreaInsets();
 
@@ -84,7 +86,11 @@ const CartScreen = () => {
             <Text style={styles.clearBtnText}>Clear Cart</Text>
           </TouchableOpacity>
           <View style={{ width: 12 }} />
-          <GoldButton title="Checkout" onPress={() => {}} style={{ flex: 1 }} />
+          <GoldButton
+            title="Checkout"
+            onPress={() => navigation.navigate("Checkout")}
+            style={{ flex: 1 }}
+          />
         </View>
       </View>
     </View>
