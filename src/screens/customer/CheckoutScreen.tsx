@@ -1,3 +1,5 @@
+import * as Linking from "expo-linking";
+import * as WebBrowser from "expo-web-browser";
 import React, { useMemo, useState } from "react";
 import {
   Alert,
@@ -9,11 +11,14 @@ import {
   TextInput,
   View,
 } from "react-native";
+import supabase, { SUPABASE_ANON_KEY, SUPABASE_URL } from "../../api/supabase";
 import GoldButton from "../../components/GoldButton";
 import { Colors } from "../../constants/colors";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { clearCart } from "../../store/slices/cartSlice";
 import { createOrder } from "../../store/slices/ordersSlice";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const CheckoutScreen = ({ navigation }: any) => {
   const dispatch = useAppDispatch();
@@ -25,16 +30,26 @@ const CheckoutScreen = ({ navigation }: any) => {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Safe payment metadata only (never store full card numbers)
-  const [cardLast4, setCardLast4] = useState("");
-  const [expMonth, setExpMonth] = useState("");
-  const [expYear, setExpYear] = useState("");
+  const canPlace = useMemo(
+    () => items.length > 0 && total > 0,
+    [items.length, total],
+  );
 
-  const canPlace = useMemo(() => items.length > 0 && total > 0, [items.length, total]);
-
-  const onPlaceOrder = async () => {
+  const onPayWithCard = async () => {
     if (!canPlace) {
-      Alert.alert("Cart is empty", "Please add items to your cart before checkout.");
+      Alert.alert(
+        "Cart is empty",
+        "Please add items to your cart before checkout.",
+      );
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    const accessToken = sessionData.session?.access_token;
+    console.log("ACCESS TOKEN EXISTS?", !!accessToken);
+    if (!accessToken) {
+      Alert.alert("Login required", "Please login before making a payment.");
       return;
     }
 
@@ -42,9 +57,6 @@ const CheckoutScreen = ({ navigation }: any) => {
       customer_name: name || userEmail || "Guest",
       customer_phone: phone || null,
       notes: notes || null,
-      payment_last4: cardLast4 || null,
-      payment_exp_month: expMonth ? Number(expMonth) : null,
-      payment_exp_year: expYear ? Number(expYear) : null,
       items: items.map((it) => ({
         id: it.id,
         name: it.name,
@@ -57,18 +69,91 @@ const CheckoutScreen = ({ navigation }: any) => {
 
     const res = await dispatch(createOrder(payload));
     if (createOrder.fulfilled.match(res)) {
-      dispatch(clearCart());
-      Alert.alert("Order placed", "Your order has been placed successfully.", [
+      const orderId = res.payload.id;
+
+      // Paystack expects the lowest currency unit. We'll treat total as ZAR and convert to cents.
+      const amount = Math.max(1, Math.round(total * 100));
+      const email = userEmail || "customer@example.com";
+
+      const callbackUrl = Linking.createURL("paystack/callback", {
+        queryParams: { order_id: orderId },
+      });
+
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        Alert.alert("Missing env", "SUPABASE_URL / SUPABASE_ANON_KEY not set");
+        return;
+      }
+
+      const initRes = await fetch(
+        `${SUPABASE_URL}/functions/v1/paystack-init`,
         {
-          text: "OK",
-          onPress: () => {
-            navigation.goBack();
-            navigation.navigate("Tracking");
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            amount,
+            email,
+            order_id: orderId,
+            callback_url: callbackUrl,
+          }),
         },
-      ]);
+      );
+
+      const initText = await initRes.text();
+      const initJson = (() => {
+        try {
+          return initText ? JSON.parse(initText) : {};
+        } catch {
+          return { message: initText };
+        }
+      })();
+      if (!initRes.ok) {
+        Alert.alert(
+          "Payment init failed",
+          initJson?.error || initJson?.message || `HTTP ${initRes.status}`,
+        );
+        return;
+      }
+
+      const authorizationUrl = initJson?.authorization_url as
+        | string
+        | undefined;
+      const reference = initJson?.reference as string | undefined;
+      if (!authorizationUrl || !reference) {
+        Alert.alert("Payment init failed", "Missing authorization URL");
+        return;
+      }
+
+      // Open Paystack hosted checkout
+      const result = await WebBrowser.openAuthSessionAsync(
+        authorizationUrl,
+        callbackUrl,
+      );
+
+      if (result.type !== "success" || !result.url) {
+        Alert.alert("Payment cancelled", "You cancelled the payment.");
+        return;
+      }
+
+      const parsed = Linking.parse(result.url);
+      const returnedReference =
+        (parsed.queryParams?.reference as string | undefined) ||
+        (parsed.queryParams?.trxref as string | undefined) ||
+        reference;
+
+      dispatch(clearCart());
+      navigation.navigate("PaystackCallback", {
+        reference: returnedReference,
+        order_id: orderId,
+      });
     } else {
-      Alert.alert("Checkout failed", (res.payload as string) || "Please try again.");
+      Alert.alert(
+        "Checkout failed",
+        (res.payload as string) || "Please try again.",
+      );
     }
   };
 
@@ -77,7 +162,10 @@ const CheckoutScreen = ({ navigation }: any) => {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Checkout</Text>
 
         <View style={styles.section}>
@@ -87,7 +175,9 @@ const CheckoutScreen = ({ navigation }: any) => {
               <Text style={styles.text}>
                 {it.name} x {it.quantity}
               </Text>
-              <Text style={styles.text}>R{(it.price * it.quantity).toFixed(2)}</Text>
+              <Text style={styles.text}>
+                R{(it.price * it.quantity).toFixed(2)}
+              </Text>
             </View>
           ))}
           <View style={[styles.row, { marginTop: 8 }]}>
@@ -123,42 +213,9 @@ const CheckoutScreen = ({ navigation }: any) => {
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment (optional)</Text>
-          <Text style={styles.helper}>
-            We do not store full card numbers. Only last 4 digits and expiry are saved.
-          </Text>
-          <TextInput
-            value={cardLast4}
-            onChangeText={(t) => setCardLast4(t.replace(/\D/g, "").slice(0, 4))}
-            placeholder="Card last 4"
-            placeholderTextColor="#777"
-            keyboardType="number-pad"
-            style={styles.input}
-          />
-          <View style={{ flexDirection: "row", gap: 12 }}>
-            <TextInput
-              value={expMonth}
-              onChangeText={(t) => setExpMonth(t.replace(/\D/g, "").slice(0, 2))}
-              placeholder="MM"
-              placeholderTextColor="#777"
-              keyboardType="number-pad"
-              style={[styles.input, { flex: 1 }]}
-            />
-            <TextInput
-              value={expYear}
-              onChangeText={(t) => setExpYear(t.replace(/\D/g, "").slice(0, 4))}
-              placeholder="YYYY"
-              placeholderTextColor="#777"
-              keyboardType="number-pad"
-              style={[styles.input, { flex: 1 }]}
-            />
-          </View>
-        </View>
-
         <GoldButton
-          title={loading ? "Placing order..." : "Place Order"}
-          onPress={onPlaceOrder}
+          title={loading ? "Starting payment..." : "Pay with Card"}
+          onPress={onPayWithCard}
           disabled={!canPlace || loading}
         />
       </ScrollView>
@@ -203,7 +260,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
   },
-  helper: { color: Colors.text, opacity: 0.7, marginBottom: 10 },
 });
 
 export default CheckoutScreen;

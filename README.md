@@ -1,50 +1,78 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+# Delice
+ 
+ Delice is a React Native (Expo) food ordering app with Supabase (Auth + Database + Storage) and Paystack card payments via Supabase Edge Functions.
+ 
+ ## App download
+ 
+ - **Android (Play Store / APK)**: https://YOUR_DOWNLOAD_LINK_HERE
+ 
+ If you send me your real link (Play Store URL, App Store URL, or direct APK link), I’ll replace the placeholder.
+ 
+ ## Tech stack
+ 
+ - **Mobile**: Expo + React Native
+ - **Navigation**: React Navigation
+ - **State**: Redux Toolkit + redux-persist
+ - **Backend**: Supabase
+ - **Payments**: Paystack Hosted Checkout (card)
+ 
+ ## Getting started
+ 
+ 1. Install dependencies
+ 
+    ```bash
+    npm install
+    ```
+ 
+ 2. Create environment variables
+ 
+    Create a `.env` file in the project root and add:
+ 
+    ```bash
+    EXPO_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL
+    EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+    ```
+ 
+ 3. Start the app
+ 
+    ```bash
+    npx expo start
+    ```
+ 
+ ## Paystack payments (Supabase Edge Functions)
+ 
+ Payments are implemented using Paystack hosted checkout.
+ 
+ - **Init**: `supabase/functions/paystack-init`
+ - **Verify**: `supabase/functions/paystack-verify`
+ 
+ The functions expect a Paystack secret key stored in Supabase secrets (Dashboard) as:
+ 
+ - `PAYSTACK_SECRET_KEY`
+ 
+ Deployment examples:
+ 
+ ```bash
+ npx supabase functions deploy paystack-init --no-verify-jwt
+ npx supabase functions deploy paystack-verify --no-verify-jwt
+ ```
+ 
+ ## Deep linking
+ 
+ The Paystack callback uses deep linking:
+ 
+ - **Scheme**: `delice://`
+ - **Callback route**: `delice://paystack/callback`
+ 
+ Linking configuration is in:
+ 
+ - `src/navigation/linking.ts`
+ 
+ ## Scripts
+ 
+ ```bash
+ npm run start
+ npm run android
+ npm run ios
+ npm run web
+ ```

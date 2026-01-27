@@ -15,6 +15,7 @@ import ContactScreen from "../screens/customer/ContactScreen";
 import HomeScreen from "../screens/customer/HomeScreen";
 import MenuScreen from "../screens/customer/MenuScreen";
 import OrdersScreen from "../screens/customer/OrdersScreen";
+import PaystackCallbackScreen from "../screens/customer/PaystackCallbackScreen";
 import ProfileScreen from "../screens/customer/ProfileScreen";
 import { useAppSelector } from "../store/hooks";
 
@@ -172,6 +173,11 @@ const AppTabsWithHeader = () => {
           headerTintColor: Colors.primary,
           title: "Checkout",
         }}
+      />
+      <Stack.Screen
+        name="PaystackCallback"
+        component={PaystackCallbackScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Profile"

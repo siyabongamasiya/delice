@@ -84,9 +84,6 @@ export const createOrder = createAsyncThunk<
     customer_name: string;
     customer_phone: string | null;
     notes: string | null;
-    payment_last4: string | null;
-    payment_exp_month: number | null;
-    payment_exp_year: number | null;
     items: Array<{ id: string; name: string; qty: number; price: number }>;
     total: number;
     type: Order["type"];
